@@ -32,7 +32,7 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-        # Core dependent packages
+        # Core dependencies
         echo "CONFIG_PACKAGE_libjson-c=y" >> .config
         echo "CONFIG_PACKAGE_libuci=y" >> .config
         echo "CONFIG_PACKAGE_libnl-tiny=y" >> .config
@@ -40,11 +40,11 @@ jobs:
         echo "CONFIG_PACKAGE_haserl=y" >> .config
         echo "CONFIG_PACKAGE_iptables=y" >> .config
 
-        # CoovaChilli main package + Kernel Fast-Path (xt_coova)
+        # Force coova-chilli package + kernel module
         echo "CONFIG_PACKAGE_coova-chilli=m" >> .config
         echo "CONFIG_PACKAGE_kmod-ipt-coova=m" >> .config
 
-        # CoovaChilli features
+        # Feature flags
         echo "CONFIG_COOVACHILLI_JSONINTERFACE=y" >> .config
         echo "CONFIG_COOVACHILLI_OPENSSL=y" >> .config
         echo "CONFIG_COOVACHILLI_MINIPORTAL=y" >> .config
@@ -55,11 +55,11 @@ jobs:
         make defconfig
         make package/coova-chilli/compile -j$(nproc) V=s
 
-    - name: Upload .ipk artifacts
+        echo "=== ALL BUILT PACKAGES ==="
+        find bin/ -name "*.ipk" -exec ls -lh {} +
+
+    - name: Upload all .ipk artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: coova-chilli-ipk
-        path: |
-          sdk/bin/packages/*/packages/coova-chilli_*.ipk
-          sdk/bin/packages/*/packages/kmod-ipt-coova_*.ipk
-          sdk/bin/targets/ramips/mt76x8/packages/kmod-ipt-coova_*.ipk
+        name: coova-chilli-artifacts
+        path: sdk/bin/**/*.ipk
