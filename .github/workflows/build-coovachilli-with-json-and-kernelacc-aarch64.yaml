@@ -22,12 +22,7 @@ jobs:
         rm openwrt-sdk-*.tar.zst
         mv $(find . -maxdepth 1 -type d -name "openwrt-sdk-*") sdk
 
-    - name: Add coova-chilli package
-      run: |
-        git clone https://github.com/openwisp/coova-chilli-openwrt.git
-        cp -r coova-chilli-openwrt/coova-chilli sdk/package/coova-chilli
-
-    - name: Configure and build package
+    - name: Configure feeds and packages
       run: |
         cd sdk
         ./scripts/feeds update -a
@@ -41,8 +36,9 @@ jobs:
         echo "CONFIG_PACKAGE_haserl=y" >> .config
         echo "CONFIG_PACKAGE_iptables=y" >> .config
 
-        # Force coova-chilli package
+        # Force coova-chilli package + kernel module
         echo "CONFIG_PACKAGE_coova-chilli=m" >> .config
+        echo "CONFIG_PACKAGE_kmod-ipt-coova=m" >> .config
 
         # Feature flags
         echo "CONFIG_COOVACHILLI_JSONINTERFACE=y" >> .config
@@ -53,13 +49,17 @@ jobs:
         echo "CONFIG_COOVACHILLI_UAMDOMAINFILE=y" >> .config
 
         make defconfig
-        make package/coova-chilli/compile -j$(nproc) V=s
+        make package/feeds/packages/coova-chilli/compile -j$(nproc) V=s
 
-        echo "=== ALL BUILT PACKAGES ==="
-        find bin/ -type f \( -name "*.apk" -o -name "*.ipk" \) -exec ls -lh {} +
+        # Move only coova-chilli package(s) to a dedicated output folder
+        mkdir -p ../artifact_out
+        find bin/ -type f \( -name "*chilli*.*pk" -o -name "*coova*.*pk" \) -exec cp {} ../artifact_out/ \;
 
-    - name: Upload all package artifacts
+        echo "=== TARGET FILES READY FOR UPLOAD ==="
+        ls -lh ../artifact_out/
+
+    - name: Upload CoovaChilli package only
       uses: actions/upload-artifact@v4
       with:
-        name: coova-chilli-aarch64-artifacts
-        path: sdk/bin/**/*.*pk
+        name: coova-chilli-aarch64
+        path: artifact_out/*
